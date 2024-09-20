@@ -1,0 +1,116 @@
+import React, { useState, useEffect } from 'react';
+import { Select, Alert, message } from 'antd';
+import io from 'socket.io-client'; // Import socket.io-client
+
+const { Option } = Select;
+
+const Dashboard = () => {
+  const [imageUrl, setImageUrl] = useState('');
+  const [showAlert, setShowAlert] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+
+  useEffect(() => {
+    const socket = io('http://localhost:3000'); // Connect to your backend socket.io server
+
+    // Listen for 'newImage' events from the server
+    socket.on('newImage', (imageUrl) => {
+      // Set imageUrl to display the image in your component
+      console.log('New image received:', imageUrl);
+      setImageUrl(imageUrl); // Set the image URL
+      setShowAlert(true); // Show the alert when a new image is received
+      setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })); // Update current time
+    });
+
+    // Clean up the socket connection when the component unmounts
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  const handleFalseAlarmClick = () => {
+    setImageUrl('');
+    setShowAlert(false);
+    message.error({
+      content: 'False Alarm',
+      style: {
+        fontSize: '16px',
+        fontWeight: 'bold',
+        color: 'red',
+      }
+    });
+  };
+
+  return (
+    <main className='w-full h-screen font-inter'>
+      {showAlert && (
+        <div className="w-[35%] absolute top-[0.5em] right-[0.5em] z-10">
+          <Alert
+            message="Accident Detected"
+            description={`Mumbai Pune Highway, ${currentTime}`}
+            type="error"
+            closable
+            onClose={() => setShowAlert(false)}
+          />
+        </div>
+      )}
+
+      <nav className='w-full flex justify-between items-center px-[2.5em] py-[0.5em] bg-[#F9F9F9]'>
+        <img src="./logoDashboard.svg" className='w-[4%]' alt="Logo" />
+        <button className=''>Logout</button>
+      </nav>
+
+      <div className='mt-[1.5em] px-[2em]'>
+        <div className='flex justify-between items-end border-b-[1px] pb-[0.5em]'>
+          <div className='w-50% text-left'>
+            <p className='font-bold text-[#336DFF] text-[1.8em] uppercase'>Dashboard</p>
+          </div>
+          <div className='w-[50%] flex justify-center items-end gap-[5em]'>
+            <Select defaultValue="Select Location" className="w-full invisible">
+              <Option value="Option 2">Mumbai Pune expressway</Option>
+              <Option value="Option 3">Amba Ghat</Option>
+              <Option value="Option 3">kasara ghat</Option>
+              <Option value="Option 3">Munnar Road</Option>
+            </Select>
+
+            <Select defaultValue="Time Period" className="w-full invisible">
+              <Option value="Option 1">Last 30 days</Option>
+              <Option value="Option 2">Last 6 months</Option>
+              <Option value="Option 3">Last year</Option>
+            </Select>
+
+            <div className="w-[50%] bg-[#E02929] flex justify-center items-center py-[0.15em] px-[1em] rounded-[0.2em] gap-[0.5em]">
+              <div className='w-[6px] h-[6px] rounded-[50%] bg-white'></div>
+              <div className='text-white text-[1em] tracking-wider font-inter font-semibold'>LIVE</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {imageUrl && (
+        <div className='w-[90%] mx-auto bg-[#fff] border-[1px] border-[#4495F5] border-solid flex p-[1em] mt-[2em] rounded-[0.5em] accident1'>
+          <div className='w-fit'>
+            {/* Display the image */}
+            <img src={imageUrl} alt="Accident" className='w-[70%]' />
+          </div>
+
+          <div className='w-full flex flex-col justify-between items-start'>
+            <div className='font-semibold text-[#3867E9] text-[1.2em]'>
+              <p>MUMBAI PUNE EXPRESSWAY</p>
+              <p className='font-normal'>{currentTime}</p>
+              <div className='mt-[1em] flex gap-[1em]'>
+                <img className='' src="/crash.svg" alt="Crash Icon" />
+                <img className='' src="/fire.svg" alt="Fire Icon" />
+              </div>
+            </div>
+            <div className='flex gap-[2em]'>
+              <button className='bg-[#E02929] text-white px-[2em] py-[0.7em] text-[0.8em]' onClick={handleFalseAlarmClick}>ISSUE RESOLVED</button>
+              <button className='bg-[#336DFF] text-white px-[3em] py-[0.5em] text-[0.8em]' onClick={handleFalseAlarmClick}>FALSE ALARM</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
+  );
+};
+
+export default Dashboard;
